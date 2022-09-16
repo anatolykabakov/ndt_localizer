@@ -24,7 +24,7 @@ frequency: 100
 #              true, false, false] #dx^2 
 #imu0_differential: true
 
-odom0: /odometry/filtered/local
+odom0: /odometry/odometry
 odom0_config: [false, false, false, # x y z
                false, false, false, # r p y
                true, true, false, # dx dy dz

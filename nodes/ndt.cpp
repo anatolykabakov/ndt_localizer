@@ -139,6 +139,7 @@ void NdtLocalizer::callback_init_pose(
 void NdtLocalizer::callback_pointsmap(
     const sensor_msgs::PointCloud2::ConstPtr &map_points_msg_ptr)
 {
+  const auto swap_time = std::chrono::system_clock::now();
   const auto trans_epsilon = ndt_->getTransformationEpsilon();
   const auto step_size = ndt_->getStepSize();
   const auto resolution = ndt_->getResolution();
@@ -161,13 +162,12 @@ void NdtLocalizer::callback_pointsmap(
   ndt_new->align(*output_cloud, Eigen::Matrix4f::Identity());
 
   // swap
-  //const auto swap_time = std::chrono::system_clock::now();
   ndt_map_mtx_.lock();
   ndt_ = ndt_new;
   ndt_map_mtx_.unlock();
-  //const auto swap_end_time = std::chrono::system_clock::now();
-  //const auto swap_use_time = std::chrono::duration_cast<std::chrono::microseconds>(swap_end_time - swap_time).count() / 1000.0;
-  //std::cout << "swap map time: " << swap_use_time << std::endl;
+  const auto swap_end_time = std::chrono::system_clock::now();
+  const auto swap_use_time = std::chrono::duration_cast<std::chrono::microseconds>(swap_end_time - swap_time).count() / 1000.0;
+  std::cout << "swap map time: " << swap_use_time << std::endl;
 
   delete ndt_old;
 }
@@ -198,11 +198,10 @@ void NdtLocalizer::callback_pointcloud(
       new pcl::PointCloud<pcl::PointXYZ>);
 
   pcl::fromROSMsg(*sensor_points_sensorTF_msg_ptr, *sensor_points_sensorTF_ptr);
-
+  std::cout << " size of scan " << sensor_points_sensorTF_ptr->size() << std::endl;
   // get TF odom to base
   geometry_msgs::TransformStamped::Ptr TF_odom_to_base_ptr(new geometry_msgs::TransformStamped);
   get_transform(odom_frame_, base_frame_, TF_odom_to_base_ptr, sensor_ros_time);
-
   const Eigen::Affine3d odom_to_base_affine = tf2::transformToEigen(*TF_odom_to_base_ptr);
   const Eigen::Matrix4f odom_to_base_matrix = odom_to_base_affine.matrix().cast<float>();
 
@@ -252,8 +251,13 @@ void NdtLocalizer::callback_pointcloud(
   {
     // use predicted pose as init guess
     // initial_pose_matrix = pre_trans * delta_trans;  // linear prediction mode
-    //initial_pose_matrix = map_to_odom_matrix * odom_trans;  // local odom mode
-    initial_pose_matrix = odom_trans; // global odom mode
+    // initial_pose_matrix = map_to_odom_matrix * odom_trans;  // local odom mode
+    if (localization_mode_ == "global") {
+      initial_pose_matrix = odom_trans; // global odom mode
+    }
+    if (localization_mode_ == "linear") {
+      initial_pose_matrix = pre_trans * delta_trans;  // linear prediction mode
+    }
   }
  
 
@@ -265,7 +269,27 @@ void NdtLocalizer::callback_pointcloud(
   const auto align_end_time = std::chrono::system_clock::now();
   const double align_time = std::chrono::duration_cast<std::chrono::microseconds>(align_end_time - align_start_time).count() / 1000.0;
 
-  const Eigen::Matrix4f result_pose_matrix = ndt_->getFinalTransformation();
+  Eigen::Matrix4f result_pose_matrix = ndt_->getFinalTransformation();
+
+  Pose tmp_ndt_pose;
+  Pose tmp_predict_pose;
+  getXYZRPYfromMat(result_pose_matrix, tmp_ndt_pose);
+  getXYZRPYfromMat(initial_pose_matrix.matrix(), tmp_predict_pose);
+  std::cout << "initial_pose_matrix pose: " << "x: " << tmp_ndt_pose.x << " y: " << tmp_ndt_pose.y << " z: " << tmp_ndt_pose.z << " r: " << tmp_ndt_pose.roll << " p: " << tmp_ndt_pose.pitch << " y: " << tmp_ndt_pose.yaw << std::endl;
+  std::cout << "ndt pose: " << "x: " << tmp_predict_pose.x << " y: " << tmp_predict_pose.y << " z: " << tmp_predict_pose.z << " r: " << tmp_predict_pose.roll << " p: " << tmp_predict_pose.pitch << " y: " << tmp_predict_pose.yaw << std::endl;
+  auto predict_pose_error = std::sqrt(
+    (tmp_ndt_pose.x - tmp_predict_pose.x) * (tmp_ndt_pose.x - tmp_predict_pose.x) +
+    (tmp_ndt_pose.y - tmp_predict_pose.y) * (tmp_ndt_pose.y - tmp_predict_pose.y) +
+    (tmp_ndt_pose.z - tmp_predict_pose.z) * (tmp_ndt_pose.z - tmp_predict_pose.z));
+  
+  std::cout << "predict error: " <<  predict_pose_error << std::endl;
+  const double PREDICTION_ERROR_THRESHOLD = 1.0;
+  if (predict_pose_error >= PREDICTION_ERROR_THRESHOLD) {
+    ROS_WARN_STREAM("predict error more than 1 : " <<  predict_pose_error);
+    // result_pose_matrix = initial_pose_matrix.matrix();
+    // return;
+  }
+  
   Eigen::Affine3d result_pose_affine;
   result_pose_affine.matrix() = result_pose_matrix.cast<double>();
   const geometry_msgs::Pose result_pose_msg = tf2::toMsg(result_pose_affine);
@@ -276,10 +300,7 @@ void NdtLocalizer::callback_pointcloud(
   const float transform_probability = ndt_->getTransformationProbability();
   const int iteration_num = ndt_->getFinalNumIteration();
 
-  //Pose tmp;
-  //getXYZRPYfromMat(result_pose_matrix, tmp);
-  //std::cout << "ndt pose: " << "x: " << tmp.x << " y: " << tmp.y << " z: " << tmp.z << " r: " << tmp.roll << " p: " << tmp.pitch << " y: " << tmp.yaw << std::endl;
-
+  
   bool is_converged = true;
   static size_t skipping_publish_num = 0;
   if (is_ndt_published &&
@@ -303,7 +324,6 @@ void NdtLocalizer::callback_pointcloud(
   Eigen::Matrix3f delta_rotation_matrix = delta_trans.block<3, 3>(0, 0);
   Eigen::Vector3f delta_euler = delta_rotation_matrix.eulerAngles(2, 1, 0);
   std::cout << "delta yaw: " << delta_euler(0) << " pitch: " << delta_euler(1) << " roll: " << delta_euler(2) << std::endl;
-
   // define the variance of ndt localsiation
   double deviation_t, deviation_r;
 
@@ -351,9 +371,9 @@ void NdtLocalizer::callback_pointcloud(
   const geometry_msgs::Pose result_pose_msg2 = tf2::toMsg(map_to_odom_affine);
 
   // publish tf (map frame to odom frame)
-  bool is_publish_tf = false;
+  // bool is_publish_tf = true;
 
-  if(is_publish_tf)
+  if(publish_tf_map_to_odom_)
   {
     geometry_msgs::PoseStamped result_pose_stamped_msg2;
     result_pose_stamped_msg2.header.stamp = sensor_ros_time;
@@ -395,12 +415,12 @@ void NdtLocalizer::callback_pointcloud(
   key_value_stdmap_["iteration_num"] = std::to_string(iteration_num);
   key_value_stdmap_["skipping_publish_num"] = std::to_string(skipping_publish_num);
 
-  std::cout << "------------------------------------------------" << std::endl;
   std::cout << "align_time: " << align_time << "ms" << std::endl;
   std::cout << "exe_time: " << exe_time << "ms" << std::endl;
   std::cout << "trans_prob: " << transform_probability << std::endl;
   std::cout << "iter_num: " << iteration_num << std::endl;
   std::cout << "skipping_publish_num: " << skipping_publish_num << std::endl;
+  std::cout << "------------------------------------------------" << std::endl;
 }
 
 void NdtLocalizer::init_params()
@@ -421,6 +441,8 @@ void NdtLocalizer::init_params()
   private_nh_.getParam("resolution", resolution);
   private_nh_.getParam("max_iterations", max_iterations);
   private_nh_.getParam("path_file", path_file);
+  private_nh_.getParam("publish_tf_map_to_odom", publish_tf_map_to_odom_);
+  private_nh_.getParam("localization_mode", localization_mode_);
 
   map_frame_ = "map";
   odom_frame_ = "odom";
@@ -465,7 +487,7 @@ bool NdtLocalizer::get_transform(
   catch (tf2::TransformException &ex)
   {
     ROS_WARN("%s", ex.what());
-    ROS_ERROR("Please publish TF %s to %s", target_frame.c_str(), source_frame.c_str());
+    ROS_ERROR("Please publish11 TF %s to %s", target_frame.c_str(), source_frame.c_str());
 
     transform_stamped_ptr->header.stamp = time_stamp;
     transform_stamped_ptr->header.frame_id = target_frame;
@@ -509,7 +531,7 @@ bool NdtLocalizer::get_transform(
   catch (tf2::TransformException &ex)
   {
     ROS_WARN("%s", ex.what());
-    ROS_ERROR("Please publish TF %s to %s", target_frame.c_str(), source_frame.c_str());
+    ROS_ERROR("Please publish22 TF %s to %s", target_frame.c_str(), source_frame.c_str());
 
     transform_stamped_ptr->header.stamp = ros::Time::now();
     transform_stamped_ptr->header.frame_id = target_frame;

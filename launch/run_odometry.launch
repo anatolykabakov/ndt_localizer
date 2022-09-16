@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- <param name="/use_sim_time" value="true" /> -->
+    <!--robot state publisher-->
+  <node pkg="evo_odom_fusion" type="evo_odom_fusion_node" name="evo_odom_fusion_node" output="screen">
+    <param name="platform" type="str" value="n1" />
+    <param name="vehicle_id" type="str" value="301" />
+    <param name="config_name" type="str" value="default" />
+    <param name="init_x" type="double" value="0.0" />
+    <param name="init_y" type="double" value="0.0" />
+    <param name="init_heading" type="double" value="0.0" />
+    <param name="use_odometry_kalman" type="bool" value="false" />
+    <remap from="/localization/init/rviz" to="/initialpose" />
+  </node>
+
+  <!-- Lidar compensating-->
+  <!-- <group ns="lidar_left">
+    <node pkg="evo_lidar_compensator" type="lidar_compensator_node" name="lidar_left_compensator" clear_params="true" args="input_pointcloud:=/device/lidar/left" >
+    </node>
+  </group>
+  <group ns="lidar_right">
+    <node pkg="evo_lidar_compensator" type="lidar_compensator_node" name="lidar_right_compensator" clear_params="true" args="input_pointcloud:=/device/lidar/right" >
+    </node>
+  </group>
+
+  <arg name="input_topics" default="[/lidar_left/compensated_pointcloud, /lidar_right/compensated_pointcloud]" />
+  <arg name="output_topic" default="/points_concat" />
+  <arg name="output_frame_id" default="base_link" />
+
+  <node pkg="hdl_graph_slam" type="points_concat_filter" name="points_concat_filter" output="screen">
+    <param name="output_frame_id" value="$(arg output_frame_id)" />
+    <param name="input_topics" value="$(arg input_topics)" />
+    <remap from="/points_concat" to="$(arg output_topic)" />
+  </node> -->
+  
+
+
+</launch>

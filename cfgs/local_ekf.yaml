@@ -1,6 +1,6 @@
 frequency: 100
 
-odom0: /encoder_odom
+odom0: /odometry/odometry
 odom0_config: [true, true, false, # x y z
                false, false, false, # r p y
                true, true, false, # dx dy dz
@@ -8,7 +8,7 @@ odom0_config: [true, true, false, # x y z
                false, false, false]
 odom0_differential: true
 
-imu0: /imu/data
+imu0: /sensors/imu_driver/imu
 imu0_config: [false, false, false,  
               true,  true, true,  # r p y
               false, false, false, # dx dy dz

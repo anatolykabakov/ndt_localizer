@@ -7,26 +7,33 @@
     <link name="base_link"/>
 
     <!-- IMU -->
-    <link name="imu_link"/>
+    <link name="imu"/>
     <joint name="imu_joint" type="fixed">
-        <origin rpy="0 0 0" xyz="0.14653 0 0.34964"/>
+        <origin rpy="0 0 0" xyz="0.64 -0.15 1.64"/>
         <parent link="base_link"/>
-        <child link="imu_link"/>
+        <child link="imu"/>
+    </joint>
+
+    <link name="gnss"/>
+    <joint name="gnss" type="fixed">
+        <origin rpy="0 0 0" xyz="0.5 0.55 1.9"/>
+        <parent link="base_link"/>
+        <child link="gnss"/>
     </joint>
 
     <!-- OS1 lidar -->
-    <link name="os_sensor"/>
+    <!-- <link name="os_sensor"/>
     <joint name="os_sensor_joint" type="fixed">
         <origin rpy="0 0 0" xyz="-0.01936 0 0.64805"/>
         <parent link="base_link"/>
         <child link="os_sensor"/>
-    </joint>
+    </joint> -->
 
      <!-- Zed2 -->
-     <link name="zed2_camera_center"/>
+     <!-- <link name="zed2_camera_center"/>
      <joint name="zed2_camera_joint" type="fixed">
          <origin rpy="0 0 0" xyz="0.21866 0 0.34919"/>
          <parent link="base_link"/>
          <child link="zed2_camera_center"/>
-     </joint>
+     </joint> -->
 </robot>

@@ -88,6 +88,9 @@ private:
     std::thread diagnostic_thread_;
     std::map<std::string, std::string> key_value_stdmap_;
 
+    bool publish_tf_map_to_odom_;
+    std::string localization_mode_;
+
     // function
     void init_params();
     void timer_diagnostic();

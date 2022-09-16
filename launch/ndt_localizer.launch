@@ -1,48 +1,19 @@
 <launch>
-
-  <include file="$(find ndt_localizer)/launch/jaguar.launch" />
-
-  <!-- Topics -->
   <param name="/use_sim_time" value="true" />
-
-  <arg name="input_sensor_points_topic" default="/filtered_points" doc="Sensor points topic"/>
-  <arg name="input_odom_topic" default="/odometry/filtered/global" doc="filtered odometry topic"/>
-  <arg name="input_initial_pose_topic" default="/initialpose" doc="Initial position topic to align" />
-  <arg name="input_map_points_topic" default="/points_map" doc="Map points topic" />
-  <arg name="output_pose_topic" default="ndt_pose" doc="Estimated self position" />
-  <arg name="output_pose_with_covariance_topic" default="ndt_pose_with_covariance" doc="Estimated self position with covariance" />
-  <arg name="output_diagnostics_topic" default="diagnostics" doc="Diagnostic topic" />"
-  <arg name="path_file" default="$(find ndt_localizer)/map/court_yard_map.csv" doc="Mapping trajectory as height map" />
-
-  <include file="$(find ndt_localizer)/launch/static_tf.launch" />
+  <include file="$(find ndt_localizer)/launch/run_odometry.launch" />
+  <!-- <include file="$(find ndt_localizer)/launch/robot_localization.launch" /> -->
   <include file="$(find ndt_localizer)/launch/map_loader.launch" />
+  <include file="$(find ndt_localizer)/launch/static_tf.launch" />
   <include file="$(find ndt_localizer)/launch/points_downsample.launch" />
-
-  <!-- tf -->
-  <arg name="base_frame" default="base_link" doc="Vehicle reference frame" />
-
-  <arg name="trans_epsilon" default="0.05" doc="The maximum difference between two consecutive transformations in order to consider convergence" />
-  <arg name="step_size" default="0.1" doc="The newton line search maximum step length" />
-  <arg name="resolution" default="3.0" doc="The ND voxel grid resolution" />
-  <arg name="max_iterations" default="50" doc="The number of iterations required to calculate alignment" />
-  <arg name="converged_param_transform_probability" default="3.0" doc="" />
-
-  <node pkg="ndt_localizer" type="ndt_localizer_node" name="ndt_localizer_node" output="screen">
-
-    <remap from="points_raw" to="$(arg input_sensor_points_topic)" />
-    <param name="initialpose" value="$(arg input_initial_pose_topic)" />
-    <remap from="odom" to="$(arg input_odom_topic)" />
-    <remap from="pointcloud_map" to="$(arg input_map_points_topic)" />
-    <remap from="ndt_pose" to="$(arg output_pose_topic)" />
-    <remap from="ndt_pose_with_covariance" to="$(arg output_pose_with_covariance_topic)" />
-    <remap from="diagnostics" to="$(arg output_diagnostics_topic)" />
-    <param name="base_frame" value="$(arg base_frame)" />
-    <param name="path_file" value="$(arg path_file)"/>
-    <param name="trans_epsilon" value="$(arg trans_epsilon)" />
-    <param name="step_size" value="$(arg step_size)" />
-    <param name="resolution" value="$(arg resolution)" />
-    <param name="max_iterations" value="$(arg max_iterations)" />
-    <param name="converged_param_transform_probability" value="$(arg converged_param_transform_probability)" />
-  </node>
-
+  <include file="$(find ndt_localizer)/launch/ndt.launch" />
+  <!-- kalibr init -->
+  <!-- <node pkg="rostopic" type="rostopic" name="init_pose_publisher" args="pub /initialpose geometry_msgs/PoseWithCovarianceStamped '{header: {frame_id: 'map'}, pose: {pose: {position: {x: 74.2287902832, y: 130.445404053, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.935731903742, w: 0.352712069994}}}}'" output="screen"/> -->
+  <node pkg="rostopic" type="rostopic" name="init_pose_publisher" args="pub /initialpose geometry_msgs/PoseWithCovarianceStamped '{header: {frame_id: 'map'}, pose: {pose: {position: {x: 10.4432411194, y: 8.43120002747, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.949413197441, w: 0.314029585429}}}}'" output="screen"/>
+  <!-- <node pkg="rostopic" type="rostopic" name="m112_pose_publisher" args="pub /initialpose geometry_msgs/PoseWithCovarianceStamped '{header: {frame_id: 'map'}, pose: {pose: {position: {x: -3237.81738281, y: 4438.890625, z: -11.4729566574}, orientation: {x: 0.00359741591251, y: 0.003361432764, z: 0.772384561943, w: 0.635136067796}}}}'" output="screen"/> -->
+  
+  <arg name="path" default="/workspace/bags/m11/" />
+  <arg name="file_1" default="kalibr-5_n3-301_2022-08-17-12-49-16Z_n3_radar.evo1g_n3_record_default.bag" />
+  <arg name="file_2" default="kalibr-5_n3-301_2022-08-17-12-55-45Z_n3_radar.evo1g_n3_record_default.bag" />
+  <arg name="topics" default="/can2/encoders /can2/engine_state /platform/encoders_frequency /platform/engine_state /sensors/imu_driver/fix_raw /sensors/imu_driver/fix_raw /sensors/imu_driver/imu /sensors/imu_driver/vel_raw /vehicle/steer_angle/forward /vehicle/steer_angle/backward /vehicle/steer_angle/forward /device/lidar/center /device/lidar/left /device/lidar/right /vision/front/left/image/compressed /vision/front/center/image/compressed" />
+  <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(arg path)$(arg file_1) $(arg path)$(arg file_2) --topics $(arg topics)"/>
 </launch>
