@@ -3,21 +3,23 @@ frequency: 100
 odom0: /odometry/odometry
 odom0_config: [true, true, false, # x y z
                false, false, false, # r p y
-               true, true, false, # dx dy dz
-               false, false, true, # dr dp dy
+               false, false, false, # dx dy dz
+               false, false, false, # dr dp dy
                false, false, false]
 odom0_differential: true
+odom0_relative: true
 
 imu0: /sensors/imu_driver/imu
 imu0_config: [false, false, false,  
               true,  true, true,  # r p y
               false, false, false, # dx dy dz
-              true, true, true, # dr dp dy
-              true, false, false] #dx^2 
+              false, false, false, # dr dp dy
+              false, false, false] #dx^2 
 imu0_differential: true
+imu0_relative: true
 
 
-two_d_mode: false
+two_d_mode: true
 publish_tf: true
 
 odom_frame: odom
@@ -26,8 +28,8 @@ map_frame: map
 world_frame: odom
 
 # The values are ordered as x, y, z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw, ax, ay, az. 
-process_noise_covariance: [0.005, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                           0,    0.005, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+process_noise_covariance: [0.05, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0.05, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
                            0,    0,    0.006, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
                            0,    0,    0,    0.003, 0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
                            0,    0,    0,    0,    0.003, 0,    0,     0,     0,    0,    0,    0,    0,    0,    0,

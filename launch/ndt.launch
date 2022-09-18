@@ -3,8 +3,8 @@
   <!-- tf -->
   <arg name="base_frame" default="base_link" doc="Vehicle reference frame" />
   <arg name="input_sensor_points_topic" default="/filtered_points" doc="Sensor points topic"/>
-  <!-- <arg name="input_odom_topic" default="/odometry/filtered/global" doc="filtered odometry topic"/> -->
-  <arg name="input_odom_topic" default="/odometry/odometry" doc="filtered odometry topic"/>
+  <arg name="input_odom_topic" default="/odometry/filtered/global" doc="filtered odometry topic"/>
+  <!-- <arg name="input_odom_topic" default="/odometry/odometry" doc="filtered odometry topic"/> -->
   <arg name="input_initial_pose_topic" default="/initialpose" doc="Initial position topic to align" />
   <arg name="input_map_points_topic" default="/points_map" doc="Map points topic" />
   <arg name="output_pose_topic" default="ndt_pose" doc="Estimated self position" />
@@ -18,8 +18,8 @@
   <arg name="converged_param_transform_probability" default="3.0" doc="" /> -->
 
   <node pkg="ndt_localizer" type="ndt_localizer_node" name="ndt_localizer_node" output="screen">
-    <param name="localization_mode" value="linear" />
-    <param name="publish_tf_map_to_odom" type="bool" value="true" />
+    <param name="localization_mode" value="global" />
+    <param name="publish_tf_map_to_odom" type="bool" value="false" />
     <remap from="points_raw" to="$(arg input_sensor_points_topic)" />
     <param name="initialpose" value="$(arg input_initial_pose_topic)" />
     <remap from="odom" to="$(arg input_odom_topic)" />

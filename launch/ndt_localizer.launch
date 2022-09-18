@@ -1,19 +1,24 @@
 <launch>
   <param name="/use_sim_time" value="true" />
   <include file="$(find ndt_localizer)/launch/run_odometry.launch" />
-  <!-- <include file="$(find ndt_localizer)/launch/robot_localization.launch" /> -->
+  <include file="$(find ndt_localizer)/launch/robot_localization.launch" />
   <include file="$(find ndt_localizer)/launch/map_loader.launch" />
   <include file="$(find ndt_localizer)/launch/static_tf.launch" />
   <include file="$(find ndt_localizer)/launch/points_downsample.launch" />
   <include file="$(find ndt_localizer)/launch/ndt.launch" />
   <!-- kalibr init -->
-  <!-- <node pkg="rostopic" type="rostopic" name="init_pose_publisher" args="pub /initialpose geometry_msgs/PoseWithCovarianceStamped '{header: {frame_id: 'map'}, pose: {pose: {position: {x: 74.2287902832, y: 130.445404053, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.935731903742, w: 0.352712069994}}}}'" output="screen"/> -->
-  <node pkg="rostopic" type="rostopic" name="init_pose_publisher" args="pub /initialpose geometry_msgs/PoseWithCovarianceStamped '{header: {frame_id: 'map'}, pose: {pose: {position: {x: 10.4432411194, y: 8.43120002747, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.949413197441, w: 0.314029585429}}}}'" output="screen"/>
+  <node pkg="rostopic" type="rostopic" name="init_pose_publisher" args="pub /initialpose geometry_msgs/PoseWithCovarianceStamped '{header: {frame_id: 'map'}, pose: {pose: {position: {x: 74.2287902832, y: 130.445404053, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.935731903742, w: 0.352712069994}}}}'" output="screen"/>
+  <!-- m11 init pose -->
+  <!-- <node pkg="rostopic" type="rostopic" name="init_pose_publisher" args="pub /initialpose geometry_msgs/PoseWithCovarianceStamped '{header: {frame_id: 'map'}, pose: {pose: {position: {x: 10.4432411194, y: 8.43120002747, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.949413197441, w: 0.314029585429}}}}'" output="screen"/> -->
   <!-- <node pkg="rostopic" type="rostopic" name="m112_pose_publisher" args="pub /initialpose geometry_msgs/PoseWithCovarianceStamped '{header: {frame_id: 'map'}, pose: {pose: {position: {x: -3237.81738281, y: 4438.890625, z: -11.4729566574}, orientation: {x: 0.00359741591251, y: 0.003361432764, z: 0.772384561943, w: 0.635136067796}}}}'" output="screen"/> -->
   
-  <arg name="path" default="/workspace/bags/m11/" />
-  <arg name="file_1" default="kalibr-5_n3-301_2022-08-17-12-49-16Z_n3_radar.evo1g_n3_record_default.bag" />
-  <arg name="file_2" default="kalibr-5_n3-301_2022-08-17-12-55-45Z_n3_radar.evo1g_n3_record_default.bag" />
+  <arg name="path" default="/workspace/bags/" />
+  <arg name="file_1" default="kalibr-5_n1-006_2022-08-16-11-57-33Z.evo1h_lidar_data_300sec.bag" />
+  <!-- <arg name="file_1" default="kalibr-5_n3-301_2022-08-17-12-49-16Z_n3_radar.evo1g_n3_record_default.bag" /> -->
+  <!-- <arg name="file_2" default="kalibr-5_n3-301_2022-08-17-12-55-45Z_n3_radar.evo1g_n3_record_default.bag" /> -->
+
   <arg name="topics" default="/can2/encoders /can2/engine_state /platform/encoders_frequency /platform/engine_state /sensors/imu_driver/fix_raw /sensors/imu_driver/fix_raw /sensors/imu_driver/imu /sensors/imu_driver/vel_raw /vehicle/steer_angle/forward /vehicle/steer_angle/backward /vehicle/steer_angle/forward /device/lidar/center /device/lidar/left /device/lidar/right /vision/front/left/image/compressed /vision/front/center/image/compressed" />
-  <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(arg path)$(arg file_1) $(arg path)$(arg file_2) --topics $(arg topics)"/>
+  <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(arg path)$(arg file_1) --topics $(arg topics)"/>
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ndt_localizer)/cfgs/jaguar.rviz" />
+
 </launch>
