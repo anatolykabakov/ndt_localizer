@@ -91,6 +91,8 @@ private:
     bool publish_tf_map_to_odom_;
     std::string localization_mode_;
 
+    double ndt_covariance_;
+
     // function
     void init_params();
     void timer_diagnostic();

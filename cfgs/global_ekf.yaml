@@ -25,20 +25,22 @@ frequency: 100
 #imu0_differential: true
 
 odom0: /odometry/odometry
-odom0_config: [true, true, false, # x y z
-               false, false, true, # r p y
-               false, false, false, # dx dy dz
-               false, false, false, # dr dp dy
+odom0_config: [false, false, false, # x y z
+               false, false, false, # r p y
+               true, true, false, # dx dy dz
+               false, false, true, # dr dp dy
                false, false, false]
 odom0_differential: true
+# odom0_relative: true
 
 odom1: /ndt_pose
-odom1_config: [true,  true,  false, # x y z
-                false, false, true, # r p y
+odom1_config: [true,  true,  true, # x y z
+                true, true, true, # r p y
                 false, false, false, # dx dy dz
                 false, false, false, # dr dp dy
                 false, false, false]
 odom1_differential: false
+# odom1_relative: false
 
 two_d_mode: false
 publish_tf: true

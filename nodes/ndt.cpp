@@ -129,6 +129,12 @@ void NdtLocalizer::callback_init_pose(
   init_odom_msg.header.frame_id = map_frame_;
   init_odom_msg.child_frame_id = "base_link";
   init_odom_msg.pose.pose = initial_pose_cov_msg_.pose.pose;
+  init_odom_msg.pose.covariance[0] = ndt_covariance_;
+  init_odom_msg.pose.covariance[7] = ndt_covariance_;
+  init_odom_msg.pose.covariance[14] = ndt_covariance_;
+  init_odom_msg.pose.covariance[21] = ndt_covariance_;
+  init_odom_msg.pose.covariance[28] = ndt_covariance_;
+  init_odom_msg.pose.covariance[35] = ndt_covariance_;
 
   ndt_pose_pub_.publish(init_odom_msg);
 
@@ -345,12 +351,18 @@ void NdtLocalizer::callback_pointcloud(
   result_pose_stamped_msg.header.frame_id = map_frame_;
   result_pose_stamped_msg.child_frame_id = "base_link";
   result_pose_stamped_msg.pose.pose = result_pose_msg;
-  result_pose_stamped_msg.pose.covariance[0] = deviation_t;
-  result_pose_stamped_msg.pose.covariance[7] = deviation_t;
-  result_pose_stamped_msg.pose.covariance[14] = deviation_t;
-  result_pose_stamped_msg.pose.covariance[21] = deviation_r;
-  result_pose_stamped_msg.pose.covariance[28] = deviation_r;
-  result_pose_stamped_msg.pose.covariance[35] = deviation_r;
+  // result_pose_stamped_msg.pose.covariance[0] = deviation_t;
+  // result_pose_stamped_msg.pose.covariance[7] = deviation_t;
+  // result_pose_stamped_msg.pose.covariance[14] = deviation_t;
+  // result_pose_stamped_msg.pose.covariance[21] = deviation_r;
+  // result_pose_stamped_msg.pose.covariance[28] = deviation_r;
+  // result_pose_stamped_msg.pose.covariance[35] = deviation_r;
+  result_pose_stamped_msg.pose.covariance[0] = ndt_covariance_;
+  result_pose_stamped_msg.pose.covariance[7] = ndt_covariance_;
+  result_pose_stamped_msg.pose.covariance[14] = ndt_covariance_;
+  result_pose_stamped_msg.pose.covariance[21] = ndt_covariance_;
+  result_pose_stamped_msg.pose.covariance[28] = ndt_covariance_;
+  result_pose_stamped_msg.pose.covariance[35] = ndt_covariance_;
 
   if (is_converged || !is_ndt_published)
   {
@@ -443,6 +455,7 @@ void NdtLocalizer::init_params()
   private_nh_.getParam("path_file", path_file);
   private_nh_.getParam("publish_tf_map_to_odom", publish_tf_map_to_odom_);
   private_nh_.getParam("localization_mode", localization_mode_);
+  private_nh_.getParam("ndt_covariance", ndt_covariance_);
 
   map_frame_ = "map";
   odom_frame_ = "odom";

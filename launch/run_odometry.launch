@@ -4,13 +4,14 @@
     <!--robot state publisher-->
   <node pkg="evo_odom_fusion" type="evo_odom_fusion_node" name="evo_odom_fusion_node" output="screen">
     <param name="platform" type="str" value="n1" />
-    <param name="vehicle_id" type="str" value="006" />
+    <param name="vehicle_id" type="str" value="301" />
     <param name="config_name" type="str" value="default" />
     <param name="init_x" type="double" value="0.0" />
     <param name="init_y" type="double" value="0.0" />
     <param name="init_heading" type="double" value="0.0" />
     <param name="use_odometry_kalman" type="bool" value="false" />
     <param name="sendBroadcast" type="bool" value="true" />
+    <param name="odom_covariance" type="double" value="2.5" />
     <remap from="/localization/init/rviz" to="/initialpose" />
   </node>
 

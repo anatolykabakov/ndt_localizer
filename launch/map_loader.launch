@@ -3,8 +3,8 @@
     <arg name="input_initial_pose_topic" default="/initialpose" doc="Initial position topic to align" />
     <arg name="odom_topic" default="/ndt_pose" doc="robot odom topic" />
 
-    <!-- <arg name="pcd_path"  default="/workspace/bags/m11/m11_1.pcd"/> -->
-    <arg name="pcd_path"  default="/workspace/git/autopilot/lidar_data/maps/kalibr_5/lidar_map.pcd"/>
+    <arg name="pcd_path"  default="/workspace/bags/m11/m11_1.pcd"/>
+    <!-- <arg name="pcd_path"  default="/workspace/autopilot/lidar_data/maps/kalibr_5/lidar_map.pcd"/> -->
     
     <arg name="map_topic" default="/points_map"/>
 
