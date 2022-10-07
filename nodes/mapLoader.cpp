@@ -33,8 +33,8 @@ void MapLoader::init_tf_params(ros::NodeHandle &nh){
     nh.param<float>("roll", tf_roll_, 0.0);
     nh.param<float>("pitch", tf_pitch_, 0.0);
     nh.param<float>("yaw", tf_yaw_, 0.0);
-    ROS_INFO_STREAM("x" << tf_x_ <<"y: "<<tf_y_<<"z: "<<tf_z_<<"roll: "
-                        <<tf_roll_<<" pitch: "<< tf_pitch_<<"yaw: "<<tf_yaw_);
+    ROS_INFO_STREAM("x" << tf_x_ <<"y: "<< tf_y_ <<"z: "<<tf_z_<<"roll: "
+                        << tf_roll_<<" pitch: "<< tf_pitch_<<"yaw: "<<tf_yaw_);
 }
 
 void MapLoader::transformMap(){

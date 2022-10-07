@@ -12,6 +12,7 @@
 #include <nav_msgs/Odometry.h>
 #include <vector>
 #include <pcl_ros/transforms.h>
+#include <unordered_map>
 
 class MapLoader{
 public:
@@ -34,6 +35,7 @@ private:
     std::string init_pose_topic_;
     std::string robot_pose_topic_;
     std::string pcd_file_path_;
+
     float submap_size_xy_;
     float submap_size_z_;
     float traversal_dist_=0.;
@@ -47,7 +49,8 @@ private:
 
     bool m11_2_map_used_ = false;
 
-
+    std::unordered_map<std::string, pcl::PointCloud<pcl::PointXYZ>::Ptr> maps_;
+    std::unordered_map<std::string, bool> maps_used_;
 private:
     void read_rosparameters_();
     void load_pcd_(const std::string &path_to_pcd);
@@ -55,6 +58,8 @@ private:
     void publish_map_();
 
     void switch_map(double x, double y);
+
+    void load_maps_(const std::string &path);
 
     void robot_pose_callback_(const nav_msgs::Odometry::ConstPtr &ndt_odom_msg);
     void init_pose_callback_(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &initial_pose_msg_ptr);

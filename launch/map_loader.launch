@@ -1,16 +1,18 @@
 <launch>
     <!-- <param name="/use_sim_time" default="false" /> -->
     <arg name="input_initial_pose_topic" default="/initialpose" doc="Initial position topic to align" />
-    <arg name="odom_topic" default="/ndt_pose" doc="robot odom topic" />
+    <arg name="odom_topic" default="/odometry/filtered/global" doc="robot odom topic" />
 
-    <arg name="pcd_path"  default="/workspace/bags/m11/m11_1.pcd"/>
+    <arg name="pcd_path"  default="/workspace/bags/m11"/>
     <!-- <arg name="pcd_path"  default="/workspace/autopilot/lidar_data/maps/kalibr_5/lidar_map.pcd"/> -->
     
     <arg name="map_topic" default="/points_map"/>
 
-
     <node pkg="ndt_localizer" type="map_loader"    name="map_loader" output="screen">
         <param name="pcd_path" value="$(arg pcd_path)"/>
+        <param name="submap_size_xy" type="double" value="500"/>
+        <param name="submap_size_z" type="double" value="20"/>
+        <param name="map_switch_thres" type="double" value="250"/>
         <remap from="/map_topic" to="$(arg map_topic)"/>
         <remap from="/robot_pose_topic" to="$(arg odom_topic)"/>
         <remap from="/init_pose_topic" to="$(arg input_initial_pose_topic)"/>

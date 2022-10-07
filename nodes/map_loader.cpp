@@ -1,25 +1,36 @@
 #include "map_loader.h"
+#include <experimental/filesystem>
+#include <sstream>
+#include <string>
+
+namespace fs = std::experimental::filesystem;
 
 MapLoader::MapLoader(ros::NodeHandle &nh, ros::NodeHandle &pnh): nh_(nh), pnh_(pnh){
   read_rosparameters_();
+  load_maps_(pcd_file_path_);
   
   map_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/map_topic", 1, true);
   initial_pose_sub_ = nh.subscribe("/robot_pose_topic", 1, &MapLoader::robot_pose_callback_, this);
   ndt_pose_sub_ = nh.subscribe("/init_pose_topic", 10, &MapLoader::init_pose_callback_, this);
   
-  load_pcd_(pcd_file_path_);
-  transform_map_();
-  publish_map_();
+}
+
+void MapLoader::load_maps_(const std::string &path) {
+  for (const auto path : fs::directory_iterator(path)) {
+    if (path.path().extension() != ".pcd") {
+      continue;
+    }
+    std::cout << path << " loaded"  << std::endl;
+    maps_used_.insert(std::make_pair(path.path().string(), false));
+  }
 }
 
 void MapLoader::read_rosparameters_(){
   pnh_.param<std::string>("pcd_path", pcd_file_path_, "");
-  pnh_.param<float>("x", tf_x_, 0.0);
-  pnh_.param<float>("y", tf_y_, 0.0);
-  pnh_.param<float>("z", tf_z_, 0.0);
-  pnh_.param<float>("roll", tf_roll_, 0.0);
-  pnh_.param<float>("pitch", tf_pitch_, 0.0);
-  pnh_.param<float>("yaw", tf_yaw_, 0.0);
+  pnh_.param<float>("submap_size_xy", submap_size_xy_, 100);
+  pnh_.param<float>("submap_size_z", submap_size_z_, 50);
+  pnh_.param<float>("map_switch_thres", map_switch_thres_, 10);
+
 }
 
 void MapLoader::load_pcd_(const std::string &path_to_pcd) {
@@ -27,7 +38,6 @@ void MapLoader::load_pcd_(const std::string &path_to_pcd) {
   if (pcl::io::loadPCDFile<pcl::PointXYZ>(path_to_pcd, *map_) == -1) {
     ROS_ERROR_STREAM("Lidar map not found on path " << path_to_pcd);
   }
-  ROS_INFO_STREAM("[MAP_LOADER] -- map is loaded! " << map_->size());
 }
 
 void MapLoader::transform_map_() {
@@ -51,30 +61,57 @@ void MapLoader::publish_map_() {
 
 void MapLoader::init_pose_callback_(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &initial_pose_msg_ptr)
 {
+  switch_map(initial_pose_msg_ptr->pose.pose.position.x, initial_pose_msg_ptr->pose.pose.position.y);
+  curr_pose_ = initial_pose_msg_ptr->pose.pose;
   
+  pcl::CropBox<pcl::PointXYZ> box_filter;
+  box_filter.setMin(Eigen::Vector4f(curr_pose_.position.x-submap_size_xy_, curr_pose_.position.y-submap_size_xy_, curr_pose_.position.z-submap_size_z_, 1.0));
+  box_filter.setMax(Eigen::Vector4f(curr_pose_.position.x+submap_size_xy_, curr_pose_.position.y+submap_size_xy_, curr_pose_.position.z+submap_size_z_, 1.0));
+  pcl::PointCloud<pcl::PointXYZ>::Ptr submap_ptr(new pcl::PointCloud<pcl::PointXYZ>());
+  box_filter.setInputCloud(map_);
+  box_filter.filter(*submap_ptr);
+  
+  sensor_msgs::PointCloud2::Ptr map_msg(new sensor_msgs::PointCloud2);
+  pcl::toROSMsg(*submap_ptr, *map_msg);
+  map_msg->header.frame_id = "map";
+  map_pub_.publish(*map_msg);
+
+  pre_pose_ = curr_pose_;
 }
 
 void MapLoader::switch_map(double x, double y) {
-  double m11_2_x = -3246.64233398; 
-  double m11_2_y = 4485.08544922; 
-  std::string m11_2_path = "/workspace/bags/m11/m11_2.pcd";
-  double dx = x - m11_2_x;
-  double dy = y - m11_2_y;
+  
+  for (const auto &[map_path, used_flag] : maps_used_) {
+    const auto map_name = fs::path(map_path).stem();
+    std::stringstream tmp(map_name);
+    std::vector<std::string> items;
+    std::string element;
 
-  double distance_to_new_map = std::sqrt(std::pow(dx, 2) + std::pow(dy, 2));
-  ROS_WARN_STREAM("distance to new map: " << distance_to_new_map);
+    while(std::getline(tmp, element, ',')) {
+      items.push_back(element);
+    }
 
-  bool m11_2_map = distance_to_new_map <= 10.0;
+    double map_x = std::stod(items[0]);
+    double map_y = std::stod(items[1]);
+    double map_z = std::stod(items[2]);
 
-  if (m11_2_map && !m11_2_map_used_) {
-    load_pcd_(m11_2_path);
-    tf_x_ = -3104.7783200000013;
-    tf_y_ = 3651.914062;
-    tf_z_ = -8.465209999999999;
-    transform_map_();
-    publish_map_();
-    ROS_WARN_STREAM("M11 2 MAP!");
-    m11_2_map_used_ = true;
+    double dx = x - map_x;
+    double dy = y - map_y;
+    double distance_to_new_map = std::sqrt(std::pow(dx, 2) + std::pow(dy, 2));
+    if (distance_to_new_map <= 20.0 && !maps_used_.at(map_path)) {
+      load_pcd_(map_path);
+      
+      tf_x_ = map_x;
+      tf_y_ = map_y;
+      tf_z_ = map_z;
+      transform_map_();
+
+      for (auto &[key, value] : maps_used_) {
+        maps_used_[key] = false;
+      }
+      maps_used_[map_path] = true;
+      break;
+    }
   }
 }
 
@@ -82,6 +119,28 @@ void MapLoader::switch_map(double x, double y) {
 void MapLoader::robot_pose_callback_(const nav_msgs::Odometry::ConstPtr &ndt_odom_msg)
 {
   switch_map(ndt_odom_msg->pose.pose.position.x, ndt_odom_msg->pose.pose.position.y);
+  curr_pose_ = ndt_odom_msg->pose.pose;
+
+  traversal_dist_ += sqrt(pow(curr_pose_.position.x-pre_pose_.position.x,2) + pow(curr_pose_.position.y-pre_pose_.position.y,2));
+
+  if(traversal_dist_>= map_switch_thres_) {
+    pcl::CropBox<pcl::PointXYZ> box_filter;
+    box_filter.setMin(Eigen::Vector4f(curr_pose_.position.x-submap_size_xy_, curr_pose_.position.y-submap_size_xy_, curr_pose_.position.z-submap_size_z_, 1.0));
+    box_filter.setMax(Eigen::Vector4f(curr_pose_.position.x+submap_size_xy_, curr_pose_.position.y+submap_size_xy_, curr_pose_.position.z+submap_size_z_, 1.0));
+    pcl::PointCloud<pcl::PointXYZ>::Ptr submap_ptr(new pcl::PointCloud<pcl::PointXYZ>());
+    box_filter.setInputCloud(map_);
+    box_filter.filter(*submap_ptr);
+    
+    sensor_msgs::PointCloud2::Ptr map_msg(new sensor_msgs::PointCloud2);
+    pcl::toROSMsg(*submap_ptr, *map_msg);
+    map_msg->header.frame_id = "map";
+    map_pub_.publish(*map_msg);
+
+    ROS_INFO("new submap is published!");
+	
+    traversal_dist_ = 0;
+  }
+  pre_pose_ = curr_pose_;
 }
 
 int main(int argc, char** argv)

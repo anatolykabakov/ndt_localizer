@@ -173,7 +173,7 @@ void NdtLocalizer::callback_pointsmap(
   ndt_map_mtx_.unlock();
   const auto swap_end_time = std::chrono::system_clock::now();
   const auto swap_use_time = std::chrono::duration_cast<std::chrono::microseconds>(swap_end_time - swap_time).count() / 1000.0;
-  std::cout << "swap map time: " << swap_use_time << std::endl;
+  std::cout << "swap map time microseconds: " << swap_use_time <<  std::endl;
 
   delete ndt_old;
 }
